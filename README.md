@@ -2,6 +2,9 @@
 
 A hackathon MVP for tracking daily progress and staying accountable during life periods.
 
+## User Stories
+- A student going through a demanding period wants gentle accountability and support without pressure
+
 ## Features
 
 - **Life Periods**: Create periods with up to 3 focus areas (Academics, Athletics, Social, Personal Growth)
