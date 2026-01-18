@@ -6,17 +6,26 @@ const db = require('../db');
 router.post('/', (req, res) => {
   const { name, start_date, end_date, focus_areas } = req.body;
   const focusStr = focus_areas.join(',');
+
   db.run(
     `INSERT INTO periods (name, start_date, end_date, focus_areas) VALUES (?, ?, ?, ?)`,
     [name, start_date, end_date, focusStr],
     function(err) {
       if (err) return res.status(500).send(err.message);
-      res.json({ id: this.lastID });
+
+      // Return the full period object, not just ID
+      res.json({
+        id: this.lastID,
+        name,
+        start_date,
+        end_date,
+        focus_areas
+      });
     }
   );
 });
 
-// Get all periods (for testing)
+// Optional: Get all periods (for testing)
 router.get('/', (req, res) => {
   db.all(`SELECT * FROM periods`, (err, rows) => {
     if (err) return res.status(500).send(err.message);
