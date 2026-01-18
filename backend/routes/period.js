@@ -1,35 +1,42 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const Period = require('../models/Period');
 
-// Create a new life period
+// POST /api/periods
 router.post('/', (req, res) => {
-  const { name, start_date, end_date, focus_areas } = req.body;
-  const focusStr = focus_areas.join(',');
+  const { user_id, start_date, end_date, goal_1, goal_2, goal_3 } = req.body;
 
-  db.run(
-    `INSERT INTO periods (name, start_date, end_date, focus_areas) VALUES (?, ?, ?, ?)`,
-    [name, start_date, end_date, focusStr],
-    function(err) {
-      if (err) return res.status(500).send(err.message);
+  if (!user_id || !start_date || !end_date) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
 
-      // Return the full period object, not just ID
-      res.json({
-        id: this.lastID,
-        name,
+  // Deactivate previous periods for this user first (optional, but good for cleanliness)
+  Period.deactivateAll(user_id, (err) => {
+    if (err) console.error('Error deactivating old periods', err);
+
+    Period.create(user_id, start_date, end_date, goal_1, goal_2, goal_3, (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({
+        id: result.id,
+        user_id,
         start_date,
         end_date,
-        focus_areas
+        goal_1,
+        goal_2,
+        goal_3,
+        is_active: 1
       });
-    }
-  );
+    });
+  });
 });
 
-// Optional: Get all periods (for testing)
-router.get('/', (req, res) => {
-  db.all(`SELECT * FROM periods`, (err, rows) => {
-    if (err) return res.status(500).send(err.message);
-    res.json(rows);
+// GET /api/periods/:userId/active
+router.get('/:userId/active', (req, res) => {
+  const userId = req.params.userId;
+  Period.getActiveByUserId(userId, (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ message: 'No active period found' });
+    res.json(row);
   });
 });
 
