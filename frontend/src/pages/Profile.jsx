@@ -1,73 +1,99 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { getGoals, deleteGoal } from '../utils/goalsStorage'
+import { getGoals, deleteGoal, completeGoal, formatDueDate, ensureStarterGoals } from '../utils/goalsStorage'
 import '../App.css'
 
 function Profile() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const userName = location.state?.name || 'User'
-  const [goals, setGoals] = useState([])
+    const navigate = useNavigate()
+    const location = useLocation()
+    const userName = location.state?.name || 'User'
+    const [goals, setGoals] = useState([])
 
-  useEffect(() => {
-    setGoals(getGoals())
-  }, [])
+    useEffect(() => {
+        ensureStarterGoals()
+        setGoals(getGoals())
+    }, [])
 
-  const handleDelete = (id) => {
-    deleteGoal(id)
-    setGoals(getGoals())
-  }
+    const handleDelete = (id) => {
+        deleteGoal(id)
+        setGoals(getGoals())
+    }
 
-  return (
-    <div className="background">
-      <div className="profile-container">
-        <h1>Welcome, {userName}!</h1>
-        <div className="profile-content">
-          <p>This is your profile page.</p>
-          <h2 className="goals-heading">Your Goals</h2>
-          {goals.length === 0 ? (
-            <p className="goals-empty">No goals yet. Create one!</p>
-          ) : (
-            <ul className="goals-list">
-              {goals.map((goal) => (
-                <li key={goal.id} className="goal-card">
-                  <div className="goal-card-main">
-                    <span className="goal-name">{goal.goalName}</span>
-                    <span className="goal-focus">{goal.focusArea}</span>
-                  </div>
-                  {goal.description && (
-                    <p className="goal-description">{goal.description}</p>
-                  )}
-                  <button
-                    type="button"
-                    className="goal-delete"
-                    onClick={() => handleDelete(goal.id)}
-                    aria-label="Delete goal"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+    const handleFinishEarly = (id) => {
+        completeGoal(id)
+        setGoals(getGoals())
+    }
+
+    return (
+        <div className="background">
+            <div className="profile-container">
+                <h1>Welcome, {userName}!</h1>
+                <div className="profile-content">
+                    <p>You've Checked In {goals.length} times this month!
+                    </p>
+                    <h2 className="goals-heading">Your Goals</h2>
+                    {goals.length === 0 ? (
+                        <p className="goals-empty">No goals yet. Create one!</p>
+                    ) : (
+                        <ul className="goals-list">
+                            {goals.map((goal) => (
+                                <li
+                                    key={goal.id}
+                                    className={`goal-card ${goal.completedAt ? 'goal-card--completed' : ''}`}
+                                >
+                                    <div className="goal-card-main">
+                                        <span className="goal-name">{goal.goalName}</span>
+                                        <span className="goal-focus">{goal.focusArea}</span>
+                                        {goal.dueDate && (
+                                            <span className="goal-due">
+                                                Due: {formatDueDate(goal.dueDate)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {goal.description && (
+                                        <p className="goal-description">{goal.description}</p>
+                                    )}
+                                    {goal.completedAt ? (
+                                        <span className="goal-completed-badge">Completed</span>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className="finish-early-btn"
+                                            onClick={() => handleFinishEarly(goal.id)}
+                                        >
+                                            Finish early
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="goal-delete"
+                                        onClick={() => handleDelete(goal.id)}
+                                        aria-label="Delete goal"
+                                    >
+                                        ×
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+                <div className="profile-actions">
+                    <button
+                        className="get-started-btn"
+                        onClick={() => navigate('/make-goal')}
+                    >
+                        Make Goal
+                    </button>
+                    <button
+                        className="get-started-btn secondary-btn"
+                        onClick={() => navigate('/')}
+                    >
+                        Log Out
+                    </button>
+                </div>
+            </div>
         </div>
-        <div className="profile-actions">
-          <button
-            className="get-started-btn"
-            onClick={() => navigate('/make-goal')}
-          >
-            Make Goal
-          </button>
-          <button
-            className="get-started-btn secondary-btn"
-            onClick={() => navigate('/')}
-          >
-            Log Out
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+    )
 }
 
 export default Profile

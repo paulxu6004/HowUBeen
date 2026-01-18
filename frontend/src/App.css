@@ -239,3 +239,77 @@ h1 {
 .goal-delete:hover {
     background: rgba(255, 255, 255, 0.35);
 }
+
+.goal-due {
+    font-size: 13px;
+    opacity: 0.9;
+    margin-top: 0.25rem;
+}
+
+.finish-early-btn {
+    margin-top: 0.75rem;
+    padding: 0.4rem 1rem;
+    font-size: 14px;
+    font-family: "Darumadrop One", sans-serif;
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.finish-early-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.goal-completed-badge {
+    display: inline-block;
+    margin-top: 0.75rem;
+    padding: 0.3rem 0.75rem;
+    font-size: 13px;
+    background: rgba(98, 120, 96, 0.6);
+    border-radius: 6px;
+    color: white;
+}
+
+.goal-card--completed .goal-name {
+    text-decoration: line-through;
+    opacity: 0.85;
+}
+
+.goal-card--completed {
+    opacity: 0.9;
+}
+
+/* Home presets */
+.presets-heading {
+    color: white;
+    font-family: "Darumadrop One", sans-serif;
+    font-size: 22px;
+    margin: 1.5rem 0 0.75rem 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.preset-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem auto 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+.preset-card {
+    padding-right: 1rem;
+}
+
+.home-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 0.5rem;
+}
