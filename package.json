@@ -1,7 +1,7 @@
 {
-  "name": "howubeen",
-  "private": true,
-  "scripts": {
-    "dev": "npm run dev --prefix frontend"
-  }
+    "name": "howubeen",
+    "private": true,
+    "scripts": {
+        "dev": "npx -y concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+    }
 }
