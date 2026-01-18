@@ -38,7 +38,18 @@ app.get('/', (req, res) => {
     res.send('HowUBeen API is running');
 });
 
-// Start server
+// Test Email Route
+app.post('/api/test-email', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    const { sendEmail } = require('./services/emailService');
+    const success = await sendEmail(email, 'Test Email from HowUBeen', '<h1>It Works!</h1><p>If you see this, email integration is active.</p>');
+
+    if (success) res.json({ message: 'Email sent successfully via Ethereal/SMTP' });
+    else res.status(500).json({ error: 'Failed to send email' });
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

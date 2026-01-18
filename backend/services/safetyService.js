@@ -1,17 +1,24 @@
 const Checkin = require('../models/Checkin');
 const User = require('../models/User');
 const EmergencyContact = require('../models/EmergencyContact');
-const nodemailer = require('nodemailer');
+const { sendEmail } = require('./emailService');
 
-// Simple mock transporter or real one if env vars set
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-    port: 587,
-    auth: {
-        user: process.env.SMTP_USER || 'ethereal_user',
-        pass: process.env.SMTP_PASS || 'ethereal_pass'
-    }
-});
+// Templates
+const getWarningTemplate = (name) => `
+  <h1>Check-in Reminder ⚠️</h1>
+  <p>Hi ${name},</p>
+  <p>We haven't heard from you in over 24 hours.</p>
+  <p>Please log in and check in to let us know you're okay.</p>
+  <p>Stay safe,<br>HowUBeen Team</p>
+`;
+
+const getEmergencyTemplate = (contactName, userName) => `
+  <h1>Urgent: Emergency Alert 🚨</h1>
+  <p>Hi ${contactName},</p>
+  <p>This is an automatic alert from <b>HowUBeen</b>.</p>
+  <p>Our user <b>${userName}</b> has not checked in for over 48 hours.</p>
+  <p>Please try to contact them immediately to ensure they are safe.</p>
+`;
 
 const SafetyService = {
     checkAllUsers: () => {
@@ -44,11 +51,10 @@ const SafetyService = {
     },
 
     sendWarning: (user) => {
-        // Logic to avoid spamming? Ideally store "last_warning_sent_at" in DB.
-        // For MVP, just log it.
-        console.log(`[WARNING] User ${user.email} has not checked in for 24+ hours.`);
-        // Mock email
-        // transporter.sendMail(...)
+        console.log(`[WARNING] Sending email to ${user.email} (24h+ inactive)`);
+        const subject = "⚠️ HowUBeen: We missed you today";
+        const html = getWarningTemplate(user.name);
+        sendEmail(user.email, subject, html);
     },
 
     triggerEmergency: (user) => {
@@ -57,8 +63,10 @@ const SafetyService = {
             if (err) return console.error('Error fetching contacts:', err);
 
             contacts.forEach(contact => {
-                console.log(`Sending Alert to ${contact.name} (${contact.email}) about ${user.name}`);
-                // transporter.sendMail(...)
+                console.log(`[EMERGENCY] Sending alert to ${contact.name} (${contact.email}) about ${user.name}`);
+                const subject = `🚨 EMERGENCY: Check on ${user.name}`;
+                const html = getEmergencyTemplate(contact.name, user.name);
+                sendEmail(contact.email, subject, html);
             });
         });
     }
