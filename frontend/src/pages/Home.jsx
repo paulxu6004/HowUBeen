@@ -40,7 +40,7 @@ function Home() {
         <div className="background">
             <div className="home-container">
                 <h1>HowUBeen</h1>
-                <p className="subtitle">A digital log of your goals</p>
+                <p className="subtitle">To keep you on track</p>
 
                 <h2 className="presets-heading">Example goals</h2>
                 <ul className="preset-list">
