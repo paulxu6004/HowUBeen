@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getPresetCompleted, setPresetCompleted, formatDueDate } from '../utils/goalsStorage'
 import '../App.css'
 
 function getPresetDueDate(daysFromNow) {
     const d = new Date()
     d.setDate(d.getDate() + daysFromNow)
     return d.toISOString().slice(0, 10)
+}
+
+function formatDueDate(isoDate) {
+    if (!isoDate) return null
+    return new Date(isoDate).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    })
 }
 
 const PRESETS = [
@@ -19,13 +27,13 @@ function Home() {
     const navigate = useNavigate()
     const [presetCompleted, setPresetCompletedState] = useState({})
 
+    // Initialize with empty or whatever (mocking storage)
     useEffect(() => {
-        setPresetCompletedState(getPresetCompleted())
+        // No-op or load from somewhere if we really wanted to, but ephemeral is fine for landing page
     }, [])
 
     const handleFinishEarly = (id) => {
-        setPresetCompleted(id)
-        setPresetCompletedState(getPresetCompleted())
+        setPresetCompletedState(prev => ({ ...prev, [id]: true }))
     }
 
     return (
