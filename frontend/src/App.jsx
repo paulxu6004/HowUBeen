@@ -3,6 +3,7 @@ import Home from './pages/Home'
 import SignUp from './pages/SignUp'
 import Login from './pages/Login'
 import Profile from './pages/Profile'
+import MakeGoal from './pages/MakeGoal'
 import './App.css'
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/make-goal" element={<MakeGoal />} />
       </Routes>
     </BrowserRouter>
   )
