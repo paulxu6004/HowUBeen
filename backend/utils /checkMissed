@@ -1,0 +1,31 @@
+// backend/utils/checkMissed.js
+const db = require('../db');
+const { sendNotification } = require('./messaging');
+
+async function checkMissedCheckins() {
+  // Get all periods
+  db.all('SELECT * FROM periods', (err, periods) => {
+    if (err) return console.error(err);
+
+    periods.forEach(period => {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Check if user has submitted a check-in today
+      db.get(
+        'SELECT * FROM checkins WHERE period_id = ? AND date = ?',
+        [period.id, today],
+        async (err, row) => {
+          if (err) return console.error(err);
+
+          if (!row) {
+            // No check-in today → send mock notification
+            const message = `User missed check-in for period "${period.name}" on ${today}`;
+            await sendNotification('emergency_contact@example.com', message);
+          }
+        }
+      );
+    });
+  });
+}
+
+module.exports = { checkMissedCheckins };
