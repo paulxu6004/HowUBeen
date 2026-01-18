@@ -140,7 +140,7 @@ h1 {
 .profile-container {
     text-align: center;
     padding: 2rem;
-    max-width: 600px;
+    max-width: 1000px;
 }
 
 .profile-content {
@@ -179,11 +179,12 @@ h1 {
     list-style: none;
     padding: 0;
     margin: 0.5rem auto 0;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     width: 100%;
-    max-width: 400px;
+    max-width: 900px;
+    justify-items: center;
 }
 
 .goal-card {
@@ -295,11 +296,11 @@ h1 {
     list-style: none;
     padding: 0;
     margin: 0.5rem auto 1rem;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     width: 100%;
-    max-width: 400px;
+    max-width: 900px;
 }
 
 .preset-card {
@@ -312,4 +313,141 @@ h1 {
     gap: 1rem;
     align-items: center;
     margin-top: 0.5rem;
+}
+
+/* Daily Goals Styles */
+.daily-goals-section {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.daily-goals-header {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    opacity: 0.95;
+}
+
+.daily-goals-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.daily-goal-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 13px;
+    padding: 0.3rem 0;
+}
+
+.daily-goal-checkbox {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.daily-goal-completed {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.daily-goal-delete {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: white;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.3rem;
+    border-radius: 3px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.daily-goal-delete:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.add-daily-goal {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.daily-goal-input {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    font-size: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-family: "Darumadrop One", sans-serif;
+    transition: all 0.2s ease;
+}
+
+.daily-goal-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.daily-goal-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.add-daily-goal-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 16px;
+    font-family: "Darumadrop One", sans-serif;
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.add-daily-goal-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* Weekly Summary Styles */
+.weekly-summary-section {
+    margin: 1.5rem 0;
+}
+
+.weekly-summary {
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 0.75rem auto;
+    max-width: 500px;
+    text-align: left;
+}
+
+.summary-item {
+    margin-bottom: 0.75rem;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.summary-item:last-child {
+    margin-bottom: 0;
+}
+
+.summary-item strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 14px;
 }
