@@ -61,6 +61,16 @@ function Profile() {
                 setCheckinCount(count)
             }
 
+            // 3. Get Weekly Summary
+            try {
+                const summaryRes = await client.get(`/summary/${userId}`)
+                if (summaryRes.data) {
+                    setWeeklySummaries(summaryRes.data)
+                }
+            } catch (e) {
+                console.log("No summary available yet")
+            }
+
         } catch (err) {
             console.error('Error loading profile:', err)
         }

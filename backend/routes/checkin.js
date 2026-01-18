@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Configure Multer for local storage
-const upload = multer({ 
+const upload = multer({
   dest: path.join(__dirname, '../uploads/'),
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
@@ -30,7 +30,7 @@ router.post('/', upload.single('voice'), async (req, res) => {
     // 2. If valid voice file is uploaded, transcribe it
     if (req.file) {
       voice_url = req.file.path; // Store full local path for now (or relative if serving statically)
-      
+
       const transcript = await transcribeAudio(voice_url);
       if (transcript) {
         aiInput += `\n[Voice Transcript]: ${transcript}`;
@@ -38,8 +38,28 @@ router.post('/', upload.single('voice'), async (req, res) => {
     }
 
     // 3. Extract Insights using AI
-    // We pass the combined text (note + transcript) to the AI
-    const aiResult = await extractCheckinData(aiInput);
+    // Fetch Active Goals first to pass to AI
+    const Period = require('../models/Period');
+    let activeGoals = [];
+
+    // We wrap this in a promise or similar to await it, OR just nested callback.
+    // However, since we are in async router, we can wrap Period.getActiveByUserId in a Promise helper
+    // or just use a quick promise wrapper here.
+    const getGoalsPromise = (uid) => new Promise((resolve) => {
+      Period.getActiveByUserId(uid, (err, row) => {
+        if (err || !row || !row.goals) resolve([]);
+        else resolve(JSON.parse(row.goals || "[]"));
+      });
+    });
+
+    try {
+      activeGoals = await getGoalsPromise(user_id);
+    } catch (e) {
+      console.warn("Failed to fetch goals for AI context", e);
+    }
+
+    // We pass the combined text (note + transcript) + goals to the AI
+    const aiResult = await extractCheckinData(aiInput, activeGoals);
 
     // 4. Save to Database
     db.run(

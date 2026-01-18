@@ -18,13 +18,13 @@ const authRoutes = require('./routes/auth');
 const periodRoutes = require('./routes/period');
 const checkinRoutes = require('./routes/checkin');
 const contactRoutes = require('./routes/contacts');
-// const summaryRoutes = require('./routes/summary'); // Commented out for now, focus on core logic
+const summaryRoutes = require('./routes/summary');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/periods', periodRoutes);
 app.use('/api/checkins', checkinRoutes);
 app.use('/api/contacts', contactRoutes);
-// app.use('/api/summaries', summaryRoutes);
+app.use('/api/summary', summaryRoutes);
 
 const db = require('./db'); // Initializes DB
 const SafetyService = require('./services/safetyService');
