@@ -3,6 +3,7 @@ const PRESET_COMPLETED_KEY = 'howubeen_preset_completed'
 const STARTER_GOALS_ADDED_KEY = 'howubeen_starter_goals_added'
 const CHECKINS_KEY = 'howubeen_checkins'
 const WEEKLY_SUMMARIES_KEY = 'howubeen_weekly_summaries'
+const MOODS_KEY = 'howubeen_moods'
 
 function getStarterGoals() {
     const now = Date.now()
@@ -237,3 +238,24 @@ export function generateWeeklySummaryData() {
     }
 }
 
+// Mood tracking functions
+export function getMoods() {
+    try {
+        return JSON.parse(localStorage.getItem(MOODS_KEY) || '{}')
+    } catch {
+        return {}
+    }
+}
+
+export function getTodayMood() {
+    const moods = getMoods()
+    const today = new Date().toISOString().slice(0, 10)
+    return moods[today] || null
+}
+
+export function saveTodayMood(mood) {
+    const moods = getMoods()
+    const today = new Date().toISOString().slice(0, 10)
+    moods[today] = mood
+    localStorage.setItem(MOODS_KEY, JSON.stringify(moods))
+}

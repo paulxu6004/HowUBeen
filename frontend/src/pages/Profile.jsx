@@ -14,7 +14,9 @@ import {
     shouldGenerateWeeklySummary,
     generateWeeklySummaryData,
     saveWeeklySummary,
-    getWeeklySummaries
+    getWeeklySummaries,
+    getTodayMood,
+    saveTodayMood
 } from '../utils/goalsStorage'
 import '../App.css'
 
@@ -26,6 +28,7 @@ function Profile() {
     const [checkinCount, setCheckinCount] = useState(0)
     const [newDailyGoal, setNewDailyGoal] = useState({})
     const [weeklySummaries, setWeeklySummaries] = useState([])
+    const [selectedMood, setSelectedMood] = useState(null)
 
     useEffect(() => {
         ensureStarterGoals()
@@ -33,6 +36,7 @@ function Profile() {
         setGoals(getGoals())
         setCheckinCount(getMonthlyCheckinCount())
         setWeeklySummaries(getWeeklySummaries())
+        setSelectedMood(getTodayMood())
 
         // Check if we should generate a weekly summary
         if (shouldGenerateWeeklySummary()) {
@@ -41,6 +45,11 @@ function Profile() {
             setWeeklySummaries(getWeeklySummaries())
         }
     }, [])
+
+    const handleMoodSelect = (mood) => {
+        setSelectedMood(mood)
+        saveTodayMood(mood)
+    }
 
     const handleDelete = (id) => {
         deleteGoal(id)
@@ -75,6 +84,46 @@ function Profile() {
         <div className="background">
             <div className="profile-container">
                 <h1>Welcome, {userName}!</h1>
+
+                {/* Mood Tracking Section */}
+                <div className="mood-section">
+                    <p className="mood-question">How did today feel overall?</p>
+                    <div className="mood-options">
+                        {!selectedMood ? (
+                            <>
+                                <button
+                                    className="mood-btn"
+                                    onClick={() => handleMoodSelect('sad')}
+                                    aria-label="Sad"
+                                >
+                                    😞
+                                </button>
+                                <button
+                                    className="mood-btn"
+                                    onClick={() => handleMoodSelect('neutral')}
+                                    aria-label="Neutral"
+                                >
+                                    😐
+                                </button>
+                                <button
+                                    className="mood-btn"
+                                    onClick={() => handleMoodSelect('happy')}
+                                    aria-label="Happy"
+                                >
+                                    🙂
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                className="mood-btn selected mood-btn-centered"
+                                aria-label={selectedMood === 'sad' ? 'Sad' : selectedMood === 'neutral' ? 'Neutral' : 'Happy'}
+                            >
+                                {selectedMood === 'sad' ? '😞' : selectedMood === 'neutral' ? '😐' : '🙂'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 <div className="profile-content">
                     <p>You've Checked In {checkinCount} times this month!
                     </p>
