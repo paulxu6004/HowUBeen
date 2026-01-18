@@ -3,10 +3,22 @@ const router = express.Router();
 const db = require('../db');
 const { extractCheckinData, transcribeAudio } = require('../utils/ai');
 
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configure Multer for local storage
+const upload = multer({ 
+  dest: path.join(__dirname, '../uploads/'),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
 // Submit a daily check-in
-router.post('/', async (req, res) => {
+// Uses 'upload.single("voice")' to handle the file field named "voice"
+router.post('/', upload.single('voice'), async (req, res) => {
   try {
-    const { user_id, status, voice_url, text_note } = req.body;
+    const { user_id, status, text_note } = req.body;
+    let voice_url = null; // We'll store the filename or path in DB
 
     // Default status if not provided
     const finalStatus = status || 'neutral';
@@ -15,9 +27,10 @@ router.post('/', async (req, res) => {
     // 1. Determine Input for AI
     let aiInput = text_note || "";
 
-    // 2. If valid voice file path is provided, transcribe it
-    if (voice_url) {
-      // NOTE: This assumes voice_url is a LOCAL FILE PATH for this MVP
+    // 2. If valid voice file is uploaded, transcribe it
+    if (req.file) {
+      voice_url = req.file.path; // Store full local path for now (or relative if serving statically)
+      
       const transcript = await transcribeAudio(voice_url);
       if (transcript) {
         aiInput += `\n[Voice Transcript]: ${transcript}`;
@@ -36,7 +49,7 @@ router.post('/', async (req, res) => {
         user_id,
         date,
         finalStatus,
-        voice_url,
+        voice_url, // Path to file on server
         text_note
       ],
       function (err) {

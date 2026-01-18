@@ -1,49 +1,74 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-    getGoals,
-    deleteGoal,
-    completeGoal,
-    formatDueDate,
-    ensureStarterGoals,
-    getMonthlyCheckinCount,
-    recordCheckin,
-    addDailyGoal,
-    toggleDailyGoal,
-    deleteDailyGoal,
-    shouldGenerateWeeklySummary,
-    generateWeeklySummaryData,
-    saveWeeklySummary,
-    getWeeklySummaries,
     getTodayMood,
     saveTodayMood
 } from '../utils/goalsStorage'
 import '../App.css'
 
+// Helper
+function formatDueDate(isoDate) {
+    if (!isoDate) return null
+    return new Date(isoDate).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    })
+}
+
 function Profile() {
     const navigate = useNavigate()
     const location = useLocation()
-    const userName = location.state?.name || 'User'
+    const userName = location.state?.name || localStorage.getItem('user_name') || 'User'
+
+    // State
     const [goals, setGoals] = useState([])
     const [checkinCount, setCheckinCount] = useState(0)
     const [newDailyGoal, setNewDailyGoal] = useState({})
     const [weeklySummaries, setWeeklySummaries] = useState([])
     const [selectedMood, setSelectedMood] = useState(null)
 
-    useEffect(() => {
-        ensureStarterGoals()
-        recordCheckin() // Record today's check-in
-        setGoals(getGoals())
-        setCheckinCount(getMonthlyCheckinCount())
-        setWeeklySummaries(getWeeklySummaries())
-        setSelectedMood(getTodayMood())
+    // New Check-in State
+    const [checkinStatus, setCheckinStatus] = useState('good')
+    const [checkinNote, setCheckinNote] = useState('')
 
-        // Check if we should generate a weekly summary
-        if (shouldGenerateWeeklySummary()) {
-            const summaryData = generateWeeklySummaryData()
-            saveWeeklySummary(summaryData)
-            setWeeklySummaries(getWeeklySummaries())
+    // Fetch Data from Backend
+    const fetchData = async () => {
+        try {
+            const { default: client } = await import('../api/client')
+            const userId = localStorage.getItem('user_id')
+            if (!userId) return
+
+            // 1. Get Active Period (Goals)
+            try {
+                const periodRes = await client.get(`/periods/${userId}/active`)
+                if (periodRes.data && periodRes.data.goals) {
+                    const parsed = JSON.parse(periodRes.data.goals)
+                    if (Array.isArray(parsed)) setGoals(parsed)
+                }
+            } catch (e) {
+                // If 404, just no goals yet
+            }
+
+            // 2. Get Checkin History for Count
+            const historyRes = await client.get(`/checkins/${userId}/history`)
+            if (historyRes.data) {
+                const now = new Date()
+                const count = historyRes.data.filter(c => {
+                    const d = new Date(c.created_at)
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+                }).length
+                setCheckinCount(count)
+            }
+
+        } catch (err) {
+            console.error('Error loading profile:', err)
         }
+    }
+
+    useEffect(() => {
+        fetchData()
+        setSelectedMood(getTodayMood())
     }, [])
 
     const handleMoodSelect = (mood) => {
@@ -51,33 +76,74 @@ function Profile() {
         saveTodayMood(mood)
     }
 
+    const handleCheckinSubmit = async (e) => {
+        e.preventDefault()
+        try {
+            const { default: client } = await import('../api/client')
+            const userId = localStorage.getItem('user_id')
+            await client.post('/checkins', {
+                user_id: userId,
+                status: checkinStatus,
+                text_note: checkinNote
+            })
+            alert('Check-in recorded!')
+            setCheckinNote('')
+            fetchData()
+        } catch (err) {
+            console.error(err)
+            alert('Failed to check in.')
+        }
+    }
+
     const handleDelete = (id) => {
-        deleteGoal(id)
-        setGoals(getGoals())
+        const updated = goals.filter(g => g.id !== id)
+        setGoals(updated)
+        // TODO: Sync to backend
     }
 
     const handleFinishEarly = (id) => {
-        completeGoal(id)
-        setGoals(getGoals())
+        const updated = goals.map(g => g.id === id ? { ...g, completedAt: Date.now() } : g)
+        setGoals(updated)
+        // TODO: Sync to backend
     }
 
+    // Daily Goals Logic (Local State for now)
     const handleAddDailyGoal = (goalId) => {
         const text = newDailyGoal[goalId]
         if (text && text.trim()) {
-            addDailyGoal(goalId, text.trim())
+            const updated = goals.map(g => {
+                if (g.id === goalId) {
+                    const daily = g.dailyGoals || []
+                    return { ...g, dailyGoals: [...daily, { id: Date.now(), text: text.trim(), completed: false }] }
+                }
+                return g
+            })
+            setGoals(updated)
             setNewDailyGoal({ ...newDailyGoal, [goalId]: '' })
-            setGoals(getGoals())
         }
     }
 
     const handleToggleDailyGoal = (goalId, dailyGoalId) => {
-        toggleDailyGoal(goalId, dailyGoalId)
-        setGoals(getGoals())
+        const updated = goals.map(g => {
+            if (g.id === goalId && g.dailyGoals) {
+                return {
+                    ...g,
+                    dailyGoals: g.dailyGoals.map(dg => dg.id === dailyGoalId ? { ...dg, completed: !dg.completed } : dg)
+                }
+            }
+            return g
+        })
+        setGoals(updated)
     }
 
     const handleDeleteDailyGoal = (goalId, dailyGoalId) => {
-        deleteDailyGoal(goalId, dailyGoalId)
-        setGoals(getGoals())
+        const updated = goals.map(g => {
+            if (g.id === goalId && g.dailyGoals) {
+                return { ...g, dailyGoals: g.dailyGoals.filter(dg => dg.id !== dailyGoalId) }
+            }
+            return g
+        })
+        setGoals(updated)
     }
 
     return (
@@ -125,22 +191,51 @@ function Profile() {
                 </div>
 
                 <div className="profile-content">
-                    <p>You've Checked In {checkinCount} times this month!
-                    </p>
 
+                    {/* Check-in Section */}
+                    <div className="checkin-section" style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                        <h2 className="goals-heading">Daily Check-in</h2>
+                        <form onSubmit={handleCheckinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <label style={{ color: 'white' }}>I'm feeling:</label>
+                                <select
+                                    value={checkinStatus}
+                                    onChange={(e) => setCheckinStatus(e.target.value)}
+                                    className="form-select"
+                                    style={{ maxWidth: '150px' }}
+                                >
+                                    <option value="good">Good 🟢</option>
+                                    <option value="neutral">Neutral 😐</option>
+                                    <option value="bad">Not Great 🔴</option>
+                                </select>
+                            </div>
+                            <textarea
+                                placeholder="How are things going? (Optional)"
+                                value={checkinNote}
+                                onChange={(e) => setCheckinNote(e.target.value)}
+                                style={{
+                                    padding: '0.8rem',
+                                    borderRadius: '8px',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    background: 'rgba(0,0,0,0.2)',
+                                    color: 'white',
+                                    minHeight: '80px'
+                                }}
+                            />
+                            <button type="submit" className="get-started-btn" style={{ marginTop: '0.5rem' }}>
+                                Check In
+                            </button>
+                        </form>
+                    </div>
+
+                    <p>You've Checked In {checkinCount} times this month!</p>
+
+                    {/* Weekly Summary (Placeholder if empty) */}
                     {weeklySummaries.length > 0 && (
                         <div className="weekly-summary-section">
                             <h2 className="goals-heading">Weekly Summary</h2>
                             <div className="weekly-summary">
-                                <div className="summary-item">
-                                    <strong>✅ What went well:</strong> {weeklySummaries[0].wentWell}
-                                </div>
-                                <div className="summary-item">
-                                    <strong>⚠️ What slipped:</strong> {weeklySummaries[0].slipped}
-                                </div>
-                                <div className="summary-item">
-                                    <strong>📊 Patterns:</strong> {weeklySummaries[0].patterns}
-                                </div>
+                                <div className="summary-item"><strong>✅ What went well:</strong> {weeklySummaries[0].wentWell}</div>
                             </div>
                         </div>
                     )}
@@ -151,24 +246,15 @@ function Profile() {
                     ) : (
                         <ul className="goals-list">
                             {goals.map((goal) => (
-                                <li
-                                    key={goal.id}
-                                    className={`goal-card ${goal.completedAt ? 'goal-card--completed' : ''}`}
-                                >
+                                <li key={goal.id} className={`goal-card ${goal.completedAt ? 'goal-card--completed' : ''}`}>
                                     <div className="goal-card-main">
                                         <span className="goal-name">{goal.goalName}</span>
                                         <span className="goal-focus">{goal.focusArea}</span>
-                                        {goal.dueDate && (
-                                            <span className="goal-due">
-                                                Due: {formatDueDate(goal.dueDate)}
-                                            </span>
-                                        )}
+                                        {goal.dueDate && <span className="goal-due">Due: {formatDueDate(goal.dueDate)}</span>}
                                     </div>
-                                    {goal.description && (
-                                        <p className="goal-description">{goal.description}</p>
-                                    )}
+                                    {goal.description && <p className="goal-description">{goal.description}</p>}
 
-                                    {/* Daily Goals Section */}
+                                    {/* Daily Goals */}
                                     {!goal.completedAt && (
                                         <div className="daily-goals-section">
                                             <div className="daily-goals-header">Daily Goals:</div>
@@ -176,21 +262,9 @@ function Profile() {
                                                 <ul className="daily-goals-list">
                                                     {goal.dailyGoals.map((dg) => (
                                                         <li key={dg.id} className="daily-goal-item">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={dg.completed}
-                                                                onChange={() => handleToggleDailyGoal(goal.id, dg.id)}
-                                                                className="daily-goal-checkbox"
-                                                            />
-                                                            <span className={dg.completed ? 'daily-goal-completed' : ''}>
-                                                                {dg.text}
-                                                            </span>
-                                                            <button
-                                                                className="daily-goal-delete"
-                                                                onClick={() => handleDeleteDailyGoal(goal.id, dg.id)}
-                                                            >
-                                                                ×
-                                                            </button>
+                                                            <input type="checkbox" checked={dg.completed} onChange={() => handleToggleDailyGoal(goal.id, dg.id)} className="daily-goal-checkbox" />
+                                                            <span className={dg.completed ? 'daily-goal-completed' : ''}>{dg.text}</span>
+                                                            <button className="daily-goal-delete" onClick={() => handleDeleteDailyGoal(goal.id, dg.id)}>×</button>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -198,22 +272,13 @@ function Profile() {
                                             <div className="add-daily-goal">
                                                 <input
                                                     type="text"
-                                                    placeholder="Add a daily goal..."
+                                                    placeholder="Add daily goal..."
                                                     value={newDailyGoal[goal.id] || ''}
                                                     onChange={(e) => setNewDailyGoal({ ...newDailyGoal, [goal.id]: e.target.value })}
-                                                    onKeyPress={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            handleAddDailyGoal(goal.id)
-                                                        }
-                                                    }}
+                                                    onKeyPress={(e) => e.key === 'Enter' && handleAddDailyGoal(goal.id)}
                                                     className="daily-goal-input"
                                                 />
-                                                <button
-                                                    onClick={() => handleAddDailyGoal(goal.id)}
-                                                    className="add-daily-goal-btn"
-                                                >
-                                                    +
-                                                </button>
+                                                <button onClick={() => handleAddDailyGoal(goal.id)} className="add-daily-goal-btn">+</button>
                                             </div>
                                         </div>
                                     )}
@@ -221,40 +286,21 @@ function Profile() {
                                     {goal.completedAt ? (
                                         <span className="goal-completed-badge">Completed</span>
                                     ) : (
-                                        <button
-                                            type="button"
-                                            className="finish-early-btn"
-                                            onClick={() => handleFinishEarly(goal.id)}
-                                        >
-                                            Finish early
-                                        </button>
+                                        <button type="button" className="finish-early-btn" onClick={() => handleFinishEarly(goal.id)}>Finish early</button>
                                     )}
-                                    <button
-                                        type="button"
-                                        className="goal-delete"
-                                        onClick={() => handleDelete(goal.id)}
-                                        aria-label="Delete goal"
-                                    >
-                                        ×
-                                    </button>
+                                    <button type="button" className="goal-delete" onClick={() => handleDelete(goal.id)}>×</button>
                                 </li>
                             ))}
                         </ul>
                     )}
                 </div>
+
                 <div className="profile-actions">
-                    <button
-                        className="get-started-btn"
-                        onClick={() => navigate('/make-goal')}
-                    >
-                        Make Goal
-                    </button>
-                    <button
-                        className="get-started-btn secondary-btn"
-                        onClick={() => navigate('/')}
-                    >
-                        Log Out
-                    </button>
+                    <button className="get-started-btn" onClick={() => navigate('/make-goal')}>Make Goal</button>
+                    <button className="get-started-btn secondary-btn" onClick={() => {
+                        localStorage.clear()
+                        navigate('/')
+                    }}>Log Out</button>
                 </div>
             </div>
         </div>
@@ -262,4 +308,3 @@ function Profile() {
 }
 
 export default Profile
-

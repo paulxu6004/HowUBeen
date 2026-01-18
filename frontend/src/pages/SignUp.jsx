@@ -14,6 +14,9 @@ function SignUp() {
     profilePicture: null
   })
 
+  // State for error handling
+  const [error, setError] = useState('')
+
   const handleChange = (e) => {
     if (e.target.type === 'file') {
       setFormData({
@@ -28,18 +31,50 @@ function SignUp() {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // TODO: Add API call to save user data
-    console.log('Sign up data:', formData)
-    // Navigate to login after successful signup
-    navigate('/login')
+    setError('')
+
+    try {
+      const { default: client } = await import('../api/client');
+
+      // 1. Create User
+      const signupRes = await client.post('/auth/signup', {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      });
+
+      const userId = signupRes.data.id;
+      console.log('Signup success, User ID:', userId);
+
+      // 2. Add Emergency Contact (if provided)
+      if (formData.emergencyContactEmail) {
+        try {
+          await client.post(`/contacts/${userId}`, {
+            name: 'Emergency Contact', // API requires name, but form only has email. Using placeholder.
+            email: formData.emergencyContactEmail
+          });
+        } catch (contactErr) {
+          console.warn('Failed to save emergency contact:', contactErr);
+          // Non-fatal error, continue
+        }
+      }
+
+      // Navigate to login
+      navigate('/login')
+
+    } catch (err) {
+      console.error('Signup failed:', err);
+      setError(err.response?.data?.error || 'Signup failed. Please try again.');
+    }
   }
 
   return (
     <div className="background">
       <div className="form-container">
         <h1>Sign Up</h1>
+        {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="name">Name</label>

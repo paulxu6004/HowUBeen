@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { saveGoal } from '../utils/goalsStorage'
 import '../App.css'
 
 function MakeGoal() {
@@ -21,15 +20,55 @@ function MakeGoal() {
         })
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        saveGoal({
-            goalName: formData.goalName,
-            focusArea: formData.focusArea,
-            description: formData.description,
-            dueDate: formData.dueDate || null
-        })
-        navigate('/profile')
+        try {
+            const { default: client } = await import('../api/client')
+            const userId = localStorage.getItem('user_id')
+
+            // 1. Get Active Period
+            let currentGoals = []
+            let startDate = new Date().toISOString().slice(0, 10)
+            let endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+            try {
+                const activeRes = await client.get(`/periods/${userId}/active`)
+                if (activeRes.data) {
+                    if (activeRes.data.goals) {
+                        currentGoals = JSON.parse(activeRes.data.goals)
+                    }
+                    startDate = activeRes.data.start_date
+                    endDate = activeRes.data.end_date
+                }
+            } catch (err) {
+                console.log('No active period, creating new one')
+            }
+
+            // 2. Add New Goal
+            const newGoal = {
+                id: Date.now(),
+                goalName: formData.goalName,
+                focusArea: formData.focusArea,
+                description: formData.description,
+                dueDate: formData.dueDate || null,
+                createdAt: Date.now(),
+                dailyGoals: []
+            }
+            currentGoals.unshift(newGoal)
+
+            // 3. Save (Create new period revision)
+            await client.post('/periods', {
+                user_id: userId,
+                start_date: startDate,
+                end_date: endDate,
+                goals: currentGoals
+            })
+
+            navigate('/profile')
+        } catch (err) {
+            console.error('Failed to create goal:', err)
+            alert('Failed to save goal. Please try again.')
+        }
     }
 
     return (

@@ -1,9 +1,9 @@
 const db = require('../db');
 
 const Period = {
-    create: (userId, startDate, endDate, goal1, goal2, goal3, callback) => {
-        const sql = `INSERT INTO periods (user_id, start_date, end_date, goal_1, goal_2, goal_3) VALUES (?, ?, ?, ?, ?, ?)`;
-        db.run(sql, [userId, startDate, endDate, goal1, goal2, goal3], function (err) {
+    create: (userId, startDate, endDate, goalsJSON, callback) => {
+        const sql = `INSERT INTO periods (user_id, start_date, end_date, goals) VALUES (?, ?, ?, ?)`;
+        db.run(sql, [userId, startDate, endDate, goalsJSON], function (err) {
             callback(err, { id: this.lastID });
         });
     },

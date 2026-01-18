@@ -4,26 +4,27 @@ const Period = require('../models/Period');
 
 // POST /api/periods
 router.post('/', (req, res) => {
-  const { user_id, start_date, end_date, goal_1, goal_2, goal_3 } = req.body;
+  const { user_id, start_date, end_date, goals } = req.body;
 
   if (!user_id || !start_date || !end_date) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  // Goals should be an array, convert to JSON string
+  const goalsJSON = JSON.stringify(goals || []);
+
   // Deactivate previous periods for this user first (optional, but good for cleanliness)
   Period.deactivateAll(user_id, (err) => {
     if (err) console.error('Error deactivating old periods', err);
 
-    Period.create(user_id, start_date, end_date, goal_1, goal_2, goal_3, (err, result) => {
+    Period.create(user_id, start_date, end_date, goalsJSON, (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       res.status(201).json({
         id: result.id,
         user_id,
         start_date,
         end_date,
-        goal_1,
-        goal_2,
-        goal_3,
+        goals: goals || [],
         is_active: 1
       });
     });
